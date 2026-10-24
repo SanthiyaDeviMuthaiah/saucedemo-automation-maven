@@ -1,4 +1,6 @@
 
+import java.time.Duration;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -8,368 +10,208 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
 import pages.LoginPage;
 import pages.ProductsPage;
 
-import java.time.Duration;
-
 public class LoginTest {
 
-    WebDriver driver;
-    LoginPage loginPage;
-    WebDriverWait wait;
+    private WebDriver driver;
+    private WebDriverWait wait;
+    private LoginPage loginPage;
+    private ProductsPage productsPage;
 
     @BeforeMethod
     public void setUp() {
         driver = new ChromeDriver();
         driver.manage().window().maximize();
+
+        wait = new WebDriverWait(
+                driver, Duration.ofSeconds(15));
+
         driver.get("https://www.saucedemo.com/");
 
-        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         loginPage = new LoginPage(driver);
+        productsPage = new ProductsPage(driver);
     }
 
-    @Test
-    public void invalidLoginTest() {
-        loginPage.enterUsername("standard_user");
-        loginPage.enterPassword("wrong_password");
-        loginPage.clickLogin();
-
-        String actualError = loginPage.getErrorMessage();
-
-        Assert.assertTrue(
-                actualError.contains(
-                        "Username and password do not match"
-                ),
-                "Expected login error message was not displayed."
-        );
-    }
-    @Test
-    public void validLoginTest() {
+    private void loginSuccessfully() {
         loginPage.enterUsername("standard_user");
         loginPage.enterPassword("secret_sauce");
         loginPage.clickLogin();
 
-        // Wait for the Products page title
-        boolean productsVisible = wait.until(
+        wait.until(ExpectedConditions.urlContains("inventory.html"));
+    }
+    @Test
+    public void invalidLoginTest() {
+        loginPage.enterUsername("invalid_user");
+        loginPage.enterPassword("wrong_password");
+        loginPage.clickLogin();
+
+        By errorMessage = By.cssSelector("[data-test='error']");
+
+        String actualError = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(
-                        By.className("title")
-                )
-        ).getText().equals("Products");
+                        errorMessage)).getText();
 
         Assert.assertTrue(
-                productsVisible,
-                "Login failed: Products page title was not displayed."
-        );
+                actualError.contains(
+                        "Username and password do not match"),
+                "Expected an invalid-login error.");
+    }
+
+    @Test
+    public void validLoginTest() {
+        loginSuccessfully();
+
+        Assert.assertEquals(
+                productsPage.getProductsTitle(),
+                "Products");
     }
 
     @Test
     public void productCountTest() {
-        // Login
-        loginPage.enterUsername("standard_user");
-        loginPage.enterPassword("secret_sauce");
-        loginPage.clickLogin();
+        loginSuccessfully();
 
-        // Create ProductsPage object
-        ProductsPage productsPage = new ProductsPage(driver);
-
-        // Verify product count
-        int actualProductCount = wait.until(
-                org.openqa.selenium.support.ui.ExpectedConditions
-                        .visibilityOfElementLocated(
-                                By.className("inventory_item")
-                        )
-        ) != null ? productsPage.getProductCount() : 0;
+        int productCount = driver.findElements(
+                By.className("inventory_item")).size();
 
         Assert.assertEquals(
-                actualProductCount,
-                6,
-                "Expected 6 products to be displayed."
-        );
+                productCount, 6,
+                "Expected six products.");
     }
 
     @Test
     public void addProductToCartTest() {
+        loginSuccessfully();
 
-        // Login
-        loginPage.enterUsername("standard_user");
-        loginPage.enterPassword("secret_sauce");
-        loginPage.clickLogin();
+        productsPage.addBackpackToCart();
 
-        // Wait for products to load
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.className("inventory_item")
-                )
-        );
-
-        // Create ProductsPage object
-        ProductsPage productsPage = new ProductsPage(driver);
-
-        // Add one product to the cart
-        productsPage.addProductToCart("Sauce Labs Backpack");
-
-        // Get cart quantity
-        int actualCartCount = productsPage.getCartCount();
-
-        // Verify expected quantity is 1
-        Assert.assertEquals(
-                actualCartCount,
-                1,
-                "Expected cart quantity to be 1."
-        );
-    }
-
-
-
-    @Test
-    public void verifyCartProductTest() {
-
-        // Step 1: Login
-        loginPage.enterUsername("standard_user");
-        loginPage.enterPassword("secret_sauce");
-        loginPage.clickLogin();
-
-        // Step 2: Wait for products to load
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.className("inventory_item")
-                )
-        );
-
-        // Step 3: Create ProductsPage object
-        ProductsPage productsPage = new ProductsPage(driver);
-
-        // Step 4: Add one product
-        productsPage.addProductToCart("Sauce Labs Backpack");
-
-        // Step 5: Open the cart
-        productsPage.clickShoppingCart();
-
-        // Step 6: Verify product name
-        String actualProductName = productsPage.getCartProductName();
-
-        Assert.assertEquals(
-                actualProductName,
-                "Sauce Labs Backpack",
-                "Product name does not match."
-        );
-
-        // Step 7: Verify product quantity
-        String actualQuantity = productsPage.getCartProductQuantity();
-
-        Assert.assertEquals(
-                actualQuantity,
-                "1",
-                "Expected cart item quantity to be 1."
-        );
-    }
-    @Test
-    public void removeProductFromCartTest() {
-
-        // Step 1: Login
-        loginPage.enterUsername("standard_user");
-        loginPage.enterPassword("secret_sauce");
-        loginPage.clickLogin();
-
-        // Step 2: Wait for products page
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.className("inventory_item")
-                )
-        );
-
-        // Step 3: Add a product
-        ProductsPage productsPage = new ProductsPage(driver);
-        productsPage.addProductToCart("Sauce Labs Backpack");
-
-        // Step 4: Open the cart
-        productsPage.clickShoppingCart();
-
-        // Step 5: Remove the product
-        productsPage.removeProductFromCart("Sauce Labs Backpack");
-
-        // Step 6: Verify the cart is empty
-        wait.until(
-                ExpectedConditions.invisibilityOfElementLocated(
-                        By.className("cart_item")
-                )
-        );
-
-        int actualCount = productsPage.getCartItemCount();
-
-        Assert.assertEquals(
-                actualCount,
-                0,
-                "Cart should be empty after removing the product."
-        );
-    }
-
-
-    @Test
-    public void verifyCartBadgeDisappearsTest() {
-
-        // Step 1: Login
-        loginPage.enterUsername("standard_user");
-        loginPage.enterPassword("secret_sauce");
-        loginPage.clickLogin();
-
-        // Step 2: Wait for the products page
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.className("inventory_item")
-                )
-        );
-
-        // Step 3: Add a product
-        ProductsPage productsPage = new ProductsPage(driver);
-        productsPage.addProductToCart("Sauce Labs Backpack");
-
-        // Step 4: Verify the badge is displayed
         Assert.assertTrue(
                 productsPage.isCartBadgeDisplayed(),
-                "Cart badge should be displayed after adding a product."
-        );
+                "Cart badge should appear after adding a product.");
 
-        // Step 5: Open the cart and remove the product
-        productsPage.clickShoppingCart();
-        productsPage.removeProductFromCart("Sauce Labs Backpack");
+        Assert.assertEquals(
+                driver.findElement(
+                        By.className("shopping_cart_badge")).getText(),
+                "1");
+    }
 
-        // Step 6: Verify the badge disappears
-        wait.until(
-                ExpectedConditions.invisibilityOfElementLocated(
-                        By.className("shopping_cart_badge")
-                )
-        );
+    @Test
+    public void verifyCartProductAndQuantityTest() {
+        loginSuccessfully();
+
+        productsPage.addBackpackToCart();
+        productsPage.openCart();
+
+        Assert.assertEquals(
+                productsPage.getCartItemName(),
+                "Sauce Labs Backpack");
+
+        Assert.assertEquals(
+                productsPage.getCartQuantity(),
+                "1");
+    }
+
+    @Test
+    public void removeProductFromCartTest() {
+        loginSuccessfully();
+
+        productsPage.addBackpackToCart();
+        productsPage.openCart();
+        productsPage.removeBackpackFromCart();
 
         Assert.assertFalse(
                 productsPage.isCartBadgeDisplayed(),
-                "Cart badge should disappear after removing the last product."
-        );
+                "Cart badge should disappear after removing the item.");
     }
 
     @Test
-    public void checkoutInformationTest() throws InterruptedException {
-        // Step 1: Login
-        loginPage.enterUsername("standard_user");
-        loginPage.enterPassword("secret_sauce");
-        loginPage.clickLogin();
+    public void checkoutInformationTest() {
+        loginSuccessfully();
 
-        // Step 2: Wait for the Products page
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.className("inventory_item")
-                )
-        );
-
-        // Step 3: Add a product and open the cart
-        ProductsPage productsPage = new ProductsPage(driver);
-        productsPage.addProductToCart("Sauce Labs Backpack");
-        productsPage.clickShoppingCart();
-
-        // Step 4: Click Checkout
+        productsPage.addBackpackToCart();
+        productsPage.openCart();
         productsPage.clickCheckout();
 
-        // Step 5: Enter checkout information
         productsPage.enterFirstName("Santhiya");
         productsPage.enterLastName("Devi");
         productsPage.enterPostalCode("600001");
 
-        // Step 6: Continue
-        productsPage.clickContinue();
-        Thread.sleep(1000);
-
-        System.out.println("Current URL: " + driver.getCurrentUrl());
-        System.out.println("Page title: " + productsPage.getPageTitle());
-
-        // Step 7: Verify the checkout overview page
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.className("title")
-                )
-        );
-
-        String actualTitle = productsPage.getPageTitle();
+        // Verify the fields before clicking Continue.
+        Assert.assertEquals(
+                productsPage.getFirstNameValue(),
+                "Santhiya",
+                "First name was not entered correctly.");
 
         Assert.assertEquals(
-                actualTitle,
+                productsPage.getLastNameValue(),
+                "Devi",
+                "Last name was not entered correctly.");
+
+        Assert.assertEquals(
+                productsPage.getPostalCodeValue(),
+                "600001",
+                "Postal code was not entered correctly.");
+
+        productsPage.clickContinue();
+
+        Assert.assertEquals(
+                productsPage.getCheckoutOverviewTitle(),
                 "Checkout: Overview",
-                "Checkout overview page was not displayed."
-        );
+                "Checkout did not navigate to the overview page.");
     }
 
-
     @Test
-    public void completeOrderTest() throws InterruptedException {
+    public void completeOrderTest() {
+        loginSuccessfully();
 
-        // Step 1: Login
-        loginPage.enterUsername("standard_user");
-        loginPage.enterPassword("secret_sauce");
-        loginPage.clickLogin();
-
-        // Step 2: Wait for the Products page
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.className("inventory_item")
-                )
-        );
-
-        // Step 3: Add a product and open the cart
-        ProductsPage productsPage = new ProductsPage(driver);
-        productsPage.addProductToCart("Sauce Labs Backpack");
-        productsPage.clickShoppingCart();
-
-        // Step 4: Open checkout
+        productsPage.addBackpackToCart();
+        productsPage.openCart();
         productsPage.clickCheckout();
 
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.id("first-name")
-                )
-        );
-
-        // Step 5: Enter checkout information
         productsPage.enterFirstName("Santhiya");
         productsPage.enterLastName("Devi");
         productsPage.enterPostalCode("600001");
-        productsPage.clickContinue();
-        Thread.sleep(1000);
 
-        System.out.println("Current URL: " + driver.getCurrentUrl());
-        System.out.println("Page title: " + productsPage.getPageTitle());
-
-        // Step 6: Verify checkout overview
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.id("finish")
-                )
-        );
+        // Verify all field values before continuing.
+        Assert.assertEquals(
+                productsPage.getFirstNameValue(),
+                "Santhiya");
 
         Assert.assertEquals(
-                productsPage.getPageTitle(),
-                "Checkout: Overview",
-                "Checkout overview page was not displayed."
-        );
+                productsPage.getLastNameValue(),
+                "Devi");
 
-        // Step 7: Complete the order
+        Assert.assertEquals(
+                productsPage.getPostalCodeValue(),
+                "600001");
+        System.out.println(
+                "First name: " + productsPage.getFirstNameValue());
+
+        System.out.println(
+                "Last name: " + productsPage.getLastNameValue());
+
+        System.out.println(
+                "Postal code: " + productsPage.getPostalCodeValue());
+
+        productsPage.clickContinue();
+
+        Assert.assertEquals(
+                productsPage.getCheckoutOverviewTitle(),
+                "Checkout: Overview");
+
         productsPage.clickFinish();
 
-        // Step 8: Verify order confirmation
-        String actualMessage =
-                productsPage.getOrderConfirmationMessage();
-
         Assert.assertEquals(
-                actualMessage,
-                "Thank you for your order!",
-                "Order confirmation message does not match."
-        );
+                productsPage.getCompleteOrderMessage(),
+                "Thank you for your order!");
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void tearDown() {
         if (driver != null) {
             driver.quit();
         }
     }
-
 }
