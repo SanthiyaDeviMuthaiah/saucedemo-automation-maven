@@ -249,8 +249,7 @@ public class LoginTest {
     }
 
     @Test
-    public void checkoutInformationTest() {
-
+    public void checkoutInformationTest() throws InterruptedException {
         // Step 1: Login
         loginPage.enterUsername("standard_user");
         loginPage.enterPassword("secret_sauce");
@@ -278,6 +277,10 @@ public class LoginTest {
 
         // Step 6: Continue
         productsPage.clickContinue();
+        Thread.sleep(1000);
+
+        System.out.println("Current URL: " + driver.getCurrentUrl());
+        System.out.println("Page title: " + productsPage.getPageTitle());
 
         // Step 7: Verify the checkout overview page
         wait.until(
@@ -297,7 +300,7 @@ public class LoginTest {
 
 
     @Test
-    public void completeOrderTest() {
+    public void completeOrderTest() throws InterruptedException {
 
         // Step 1: Login
         loginPage.enterUsername("standard_user");
@@ -330,6 +333,10 @@ public class LoginTest {
         productsPage.enterLastName("Devi");
         productsPage.enterPostalCode("600001");
         productsPage.clickContinue();
+        Thread.sleep(1000);
+
+        System.out.println("Current URL: " + driver.getCurrentUrl());
+        System.out.println("Page title: " + productsPage.getPageTitle());
 
         // Step 6: Verify checkout overview
         wait.until(
@@ -364,4 +371,5 @@ public class LoginTest {
             driver.quit();
         }
     }
+
 }
