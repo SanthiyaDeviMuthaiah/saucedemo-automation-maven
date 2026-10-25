@@ -35,7 +35,6 @@ public class LoginTest {
         productsPage = new ProductsPage(driver);
     }
 
-
     private void loginSuccessfully() {
         loginPage.enterUsername("standard_user");
         loginPage.enterPassword("secret_sauce");

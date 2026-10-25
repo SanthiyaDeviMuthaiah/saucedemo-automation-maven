@@ -26,7 +26,7 @@ public class ProductsPage {
     private final By cartButton = By.className("shopping_cart_link");
     private final By cartBadge = By.className("shopping_cart_badge");
     private final By cartItem = By.className("inventory_item_name");
-    private final By cartQuantity = By.cssSelector(".cart_quantity");
+    private final By cartQuantity = By.className("cart_quantity");
 
     // Checkout information
     private final By checkoutButton = By.id("checkout");
@@ -54,15 +54,32 @@ public class ProductsPage {
     }
 
     // Add backpack to cart
-    public void addBackpackToCart() {
-        wait.until(
-                ExpectedConditions.elementToBeClickable(
-                        addBackpackButton)).click();
 
+    // Add backpack to cart
+    public void addBackpackToCart() {
+        WebElement addButton = wait.until(
+                ExpectedConditions.elementToBeClickable(addBackpackButton));
+
+        addButton.click();
+
+        // First, verify that the button changes to Remove
         wait.until(
                 ExpectedConditions.visibilityOfElementLocated(
-                        cartBadge));
+                        removeBackpackButton));
+
+        System.out.println(
+                "Remove button displayed: "
+                        + driver.findElement(removeBackpackButton).isDisplayed());
+
+        // Then, verify that the cart badge appears
+        wait.until(
+                ExpectedConditions.visibilityOfElementLocated(cartBadge));
+
+        System.out.println(
+                "Cart quantity: "
+                        + driver.findElement(cartBadge).getText());
     }
+
 
     // Remove backpack from cart
     public void removeBackpackFromCart() {
@@ -105,15 +122,29 @@ public class ProductsPage {
     }
 
     // Click Checkout and wait for the information form
-    public void clickCheckout() {
-        wait.until(
-                ExpectedConditions.elementToBeClickable(
-                        checkoutButton)).click();
 
+    public void clickCheckout() {
+        // Confirm that we are on the cart page before clicking Checkout
+        wait.until(ExpectedConditions.urlContains("cart.html"));
+
+        // Wait for the Checkout button and click it
+        WebElement checkout = wait.until(
+                ExpectedConditions.elementToBeClickable(checkoutButton));
+
+        checkout.click();
+
+        // Wait until the checkout information page has loaded
+        wait.until(ExpectedConditions.urlContains("checkout-step-one.html"));
+
+        // Confirm that the first-name field is visible
         wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        firstNameField));
+                ExpectedConditions.visibilityOfElementLocated(firstNameField));
+
+        System.out.println(
+                "Checkout information page loaded: "
+                        + driver.getCurrentUrl());
     }
+
 
     // Diagnostic: inspect checkout inputs before typing
     public void printCheckoutFormDetails() {
@@ -133,23 +164,38 @@ public class ProductsPage {
     }
 
     // Enter text into a checkout field
+
+
+
     private void enterText(By locator, String value) {
         WebElement field = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(locator));
+
+        // Bring the field into view and focus it
+        ((org.openqa.selenium.JavascriptExecutor) driver)
+                .executeScript("arguments[0].scrollIntoView({block: 'center'});", field);
+
+        field = wait.until(
                 ExpectedConditions.elementToBeClickable(locator));
 
         field.click();
-        field.clear();
+        field.sendKeys(org.openqa.selenium.Keys.chord(
+                org.openqa.selenium.Keys.CONTROL, "a"));
+        field.sendKeys(org.openqa.selenium.Keys.BACK_SPACE);
         field.sendKeys(value);
 
-        String actualValue = field.getDomProperty("value");
+        // Reacquire the field and verify the entered value
+        wait.until(d ->
+                value.equals(d.findElement(locator).getDomProperty("value")));
+
+        String actualValue = driver.findElement(locator)
+                .getDomProperty("value");
 
         System.out.println(
-                "Field: " + locator
-                        + ", expected=[" + value + "]"
-                        + ", actual=[" + actualValue + "]"
-                        + ", activeElement="
-                        + field.equals(driver.switchTo().activeElement()));
+                "Verified: " + locator
+                        + ", value=[" + actualValue + "]");
     }
+
 
     public void enterFirstName(String firstName) {
         enterText(firstNameField, firstName);
