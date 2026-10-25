@@ -21,10 +21,10 @@ public class LoginTest {
     private LoginPage loginPage;
     private ProductsPage productsPage;
 
+
     @BeforeMethod
     public void setUp() {
         driver = new ChromeDriver();
-        driver.manage().window().maximize();
 
         wait = new WebDriverWait(
                 driver, Duration.ofSeconds(15));
@@ -35,24 +35,40 @@ public class LoginTest {
         productsPage = new ProductsPage(driver);
     }
 
+
     private void loginSuccessfully() {
         loginPage.enterUsername("standard_user");
         loginPage.enterPassword("secret_sauce");
         loginPage.clickLogin();
 
-        wait.until(ExpectedConditions.urlContains("inventory.html"));
+        wait.until(
+                ExpectedConditions.urlContains("inventory.html"));
+
+        Assert.assertEquals(
+                productsPage.getProductsTitle(),
+                "Products",
+                "Login did not reach the Products page.");
+
+        Assert.assertEquals(
+                driver.findElements(
+                        By.className("inventory_item")).size(),
+                6,
+                "Expected six products on the Products page.");
+
+        System.out.println(
+                "Login verified. URL: " + driver.getCurrentUrl());
     }
+
     @Test
     public void invalidLoginTest() {
         loginPage.enterUsername("invalid_user");
         loginPage.enterPassword("wrong_password");
         loginPage.clickLogin();
 
-        By errorMessage = By.cssSelector("[data-test='error']");
-
         String actualError = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        errorMessage)).getText();
+                        ExpectedConditions.visibilityOfElementLocated(
+                                By.cssSelector("[data-test='error']")))
+                .getText();
 
         Assert.assertTrue(
                 actualError.contains(
@@ -65,8 +81,7 @@ public class LoginTest {
         loginSuccessfully();
 
         Assert.assertEquals(
-                productsPage.getProductsTitle(),
-                "Products");
+                productsPage.getProductsTitle(), "Products");
     }
 
     @Test
@@ -109,8 +124,7 @@ public class LoginTest {
                 "Sauce Labs Backpack");
 
         Assert.assertEquals(
-                productsPage.getCartQuantity(),
-                "1");
+                productsPage.getCartQuantity(), "1");
     }
 
     @Test
@@ -134,11 +148,14 @@ public class LoginTest {
         productsPage.openCart();
         productsPage.clickCheckout();
 
+        // Inspect the checkout form before entering text.
+        productsPage.printCheckoutFormDetails();
+
         productsPage.enterFirstName("Santhiya");
         productsPage.enterLastName("Devi");
         productsPage.enterPostalCode("600001");
 
-        // Verify the fields before clicking Continue.
+        // Verify the field values.
         Assert.assertEquals(
                 productsPage.getFirstNameValue(),
                 "Santhiya",
@@ -174,26 +191,14 @@ public class LoginTest {
         productsPage.enterLastName("Devi");
         productsPage.enterPostalCode("600001");
 
-        // Verify all field values before continuing.
         Assert.assertEquals(
-                productsPage.getFirstNameValue(),
-                "Santhiya");
+                productsPage.getFirstNameValue(), "Santhiya");
 
         Assert.assertEquals(
-                productsPage.getLastNameValue(),
-                "Devi");
+                productsPage.getLastNameValue(), "Devi");
 
         Assert.assertEquals(
-                productsPage.getPostalCodeValue(),
-                "600001");
-        System.out.println(
-                "First name: " + productsPage.getFirstNameValue());
-
-        System.out.println(
-                "Last name: " + productsPage.getLastNameValue());
-
-        System.out.println(
-                "Postal code: " + productsPage.getPostalCodeValue());
+                productsPage.getPostalCodeValue(), "600001");
 
         productsPage.clickContinue();
 
