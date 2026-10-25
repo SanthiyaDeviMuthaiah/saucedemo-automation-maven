@@ -141,10 +141,14 @@ public class ProductsPage {
         field.clear();
         field.sendKeys(value);
 
+        String actualValue = field.getDomProperty("value");
+
         System.out.println(
                 "Field: " + locator
                         + ", expected=[" + value + "]"
-                        + ", actual=[" + field.getAttribute("value") + "]");
+                        + ", actual=[" + actualValue + "]"
+                        + ", activeElement="
+                        + field.equals(driver.switchTo().activeElement()));
     }
 
     public void enterFirstName(String firstName) {
