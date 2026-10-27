@@ -21,7 +21,6 @@ public class LoginTest {
     private LoginPage loginPage;
     private ProductsPage productsPage;
 
-
     @BeforeMethod
     public void setUp() {
         driver = new ChromeDriver();
@@ -169,6 +168,9 @@ public class LoginTest {
                 productsPage.getPostalCodeValue(),
                 "600001",
                 "Postal code was not entered correctly.");
+
+        // Diagnostic: inspect all field values immediately before Continue.
+        productsPage.printCheckoutFormDetails();
 
         productsPage.clickContinue();
 
